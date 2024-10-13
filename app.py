@@ -60,11 +60,14 @@ if path:
     df_list = []
     for i, file in enumerate(path):
         st.write(f"Processing file {i+1} of {n}")
-        df = convert_image(file)
-        df.columns = df.columns + 1
-        df["round"] = range(1, len(df)+1)
-        df["draft num"] = i+1
-        df_list.append(df)
+        try:
+            df = convert_image(file)
+            df.columns = df.columns + 1
+            df["round"] = range(1, len(df)+1)
+            df["draft num"] = i+1
+            df_list.append(df)
+        except:
+            st.write(f"File {i+1} did not work")
     st.write("Finished")
 
 
