@@ -42,7 +42,7 @@ def convert_image(file):
         imfile = Image.fromarray(bw[start+(height//4):stop-(height//3)+6, :])
         img_byte_arr = io.BytesIO()
         imfile.save(img_byte_arr, format='PNG')
-        imfile.save("br_temp.png")
+        # imfile.save("br_temp.png")
         reader = easyocr.Reader(['en'])
         result = reader.readtext(img_byte_arr.getvalue(), paragraph=True)
         # the `sorted` is to get the names in the right order
