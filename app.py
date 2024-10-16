@@ -1,12 +1,13 @@
 import streamlit as st
 from PIL import Image
+import io
 import numpy as np
 import pandas as pd
 import easyocr
 
 path = st.file_uploader("Select Underdog Battle Royale draft board images", accept_multiple_files=True)
 
-translate_dct = {ord(c): '' for c in "_().:;"}
+translate_dct = {ord(c): '' for c in "_().:;[1]"}
 
 def convert_image(file):
     gray = np.asarray(Image.open(file).convert('L'))
@@ -18,6 +19,8 @@ def convert_image(file):
         thresh = 200
     # convert to black and white
     bw = np.asarray(gray).copy()
+    # sometimes the leftmost rows break things
+    bw = bw[:, 2:]
     bw[bw < thresh] = 0
     bw[bw >= thresh] = 255
     if dark_mode:
@@ -37,9 +40,11 @@ def convert_image(file):
         # The division parts were found by trial and error
         # The +6 is to capture some y characters, originally misread as v
         imfile = Image.fromarray(bw[start+(height//4):stop-(height//3)+6, :])
+        img_byte_arr = io.BytesIO()
+        imfile.save(img_byte_arr, format='PNG')
         imfile.save("br_temp.png")
         reader = easyocr.Reader(['en'])
-        result = reader.readtext("br_temp.png", paragraph=True)
+        result = reader.readtext(img_byte_arr.getvalue(), paragraph=True)
         # the `sorted` is to get the names in the right order
         rd = []
         for (bbox, text) in sorted(result, key = lambda x: x[0][0][0]):
@@ -66,15 +71,19 @@ if path:
             df["round"] = range(1, len(df)+1)
             df["draft num"] = i+1
             df_list.append(df)
-        except:
+        except (ValueError, NameError, IndexError):
             st.write(f"File {i+1} did not work")
     st.write("Finished")
 
+    try:
+        df_all = pd.concat(df_list, axis=0)
+        data_as_csv= df_all.to_csv(index=False).encode("utf-8")
 
-    df_all = pd.concat(df_list, axis=0)
-    data_as_csv= df_all.to_csv(index=False).encode("utf-8")
+        st.dataframe(df_all)
 
-    st.dataframe(df_all)
+        fragment_function()
+    except (ValueError, NameError):
+        pass
 
-    fragment_function()
+    
     
